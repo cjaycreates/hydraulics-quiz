@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hydraulics Quiz (Ch 3–6)</title>
+  <style>
+    :root{
+      --bg:#0b1220;--card:#121a2b;--ink:#eef3ff;--muted:#a9b3c9;--accent:#5cc8ff;--good:#28c76f;--bad:#ff6b6b
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#0b1220,#0a1020 40%);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
+    header{position:sticky;top:0;background:#0b1220cc;backdrop-filter:saturate(140%) blur(6px);border-bottom:1px solid #1f2a44;padding:12px 20px;z-index:5}
+    header h1{margin:0;font-size:20px}
+    main{max-width:1100px;margin:24px auto;padding:0 16px 40px}
+    .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0 20px}
+    .btn{border:1px solid #243255;background:#172138;color:var(--ink);padding:10px 14px;border-radius:12px;cursor:pointer;transition:.2s}
+    .btn:hover{transform:translateY(-1px);border-color:var(--accent)}
+    .btn.primary{background:linear-gradient(135deg,#1a2b4e,#17365e);border-color:#2b4779}
+    .pill{display:inline-flex;gap:8px;align-items:center;border:1px solid #27324a;background:#131c31;padding:8px 12px;border-radius:999px;color:var(--muted);font-size:14px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+    .card{background:var(--card);border:1px solid #1b2540;border-radius:16px;padding:16px;box-shadow:0 6px 20px #0008}
+    .qmeta{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-bottom:8px}
+    .choices{display:grid;gap:8px;margin-top:8px}
+    .choice{display:flex;gap:10px;align-items:baseline;border:1px solid #223055;background:#0f1728;padding:10px 12px;border-radius:10px;cursor:pointer}
+    .choice:hover{border-color:#2f4b7d}
+    .choice input{margin-top:4px}
+    .fib{width:100%;padding:10px 12px;background:#0f1728;border:1px solid #223055;border-radius:10px;color:var(--ink)}
+    .foot{margin-top:10px;font-size:13px;color:var(--muted)}
+    .correct{border-color:#265b43;background:linear-gradient(0deg,#0f1f19,#11241a)}
+    .incorrect{border-color:#5b2631;background:linear-gradient(0deg,#1b0f13,#201117)}
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid #2a3b5f;background:#0e1730;color:var(--muted)}
+    .result{margin:18px 0;padding:14px;border:1px dashed #31436d;border-radius:12px;background:#0e1630}
+    .hidden{display:none}
+    .chapterFilter{display:flex;gap:8px;flex-wrap:wrap}
+    .chapterFilter label{display:flex;gap:6px;align-items:center;background:#101a30;border:1px solid #27324a;padding:6px 10px;border-radius:999px;color:var(--muted);cursor:pointer}
+    @media print{header,.toolbar{display:none} body{background:#fff;color:#000} .card{break-inside:avoid}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Hydraulics Quiz (Chapters 3–6) — Interactive</h1>
+  </header>
+  <main>
+    <div class="toolbar">
+      <span class="pill">Questions: <strong id="qCount">0</strong></span>
+      <span class="pill">Score: <strong id="scorePill">0 / 0</strong></span>
+      <button class="btn primary" id="submitBtn">Grade Quiz</button>
+      <button class="btn" id="resetBtn">Reset</button>
+      <button class="btn" id="shuffleBtn">Shuffle</button>
+      <div class="chapterFilter" title="Show/Hide by Chapter">
+        <label><input type="checkbox" data-ch="3" checked /> Ch.3</label>
+        <label><input type="checkbox" data-ch="4" checked /> Ch.4</label>
+        <label><input type="checkbox" data-ch="5" checked /> Ch.5</label>
+        <label><input type="checkbox" data-ch="6" checked /> Ch.6</label>
+      </div>
+    </div>
+
+    <div id="quiz" class="grid"></div>
+
+    <div class="result hidden" id="resultsBox"></div>
+
+    <div class="foot">Tip: You can print this page (Ctrl/Cmd+P) for a paper copy. Toggle chapters to focus practice.</div>
+  </main>
+
+  <script>
+  // --- Question bank --------------------------------------------------------
+  /** Types: mc (multiple choice), tf (true/false), fib (fill in blank)
+      Answer formats: mc -> index (0-based), tf -> true/false, fib -> array of acceptable strings
+  **/
+  const BANK = [
+    // ---- Chapter 3 (exactly 3, later-section topics) ----
+    {id:1, ch:3, type:'mc', q:'On a curved submerged surface, the resultant hydrostatic force acts at the…', choices:['Lowest point','Centroid of the plate area','Centroid of the pressure diagram','Point of maximum depth'], ans:2},
+    {id:2, ch:3, type:'mc', q:'A piezometer installed on a pressurized pipe primarily measures:', choices:['Velocity head','Friction loss','Pressure head (static)','Total head'], ans:2},
+    {id:3, ch:3, type:'fib', q:'The buoyant force equals the weight of the ________ displaced by the body.', answers:['fluid','water']},
+
+    // ---- Chapter 4 (8) ----
+    {id:4, ch:4, type:'mc', q:'Continuity for incompressible flow is:', choices:['Q = γz','Q = A V','H = f L / D','V = g A'], ans:1},
+    {id:5, ch:4, type:'mc', q:'Bernoulli’s equation is based on conservation of:', choices:['Mass','Energy','Momentum','Pressure'], ans:1},
+    {id:6, ch:4, type:'mc', q:'The Energy Grade Line (EGL) represents:', choices:['Velocity head only','Total energy (z + p/γ + v²/2g)','Pressure + elevation only','Static pressure only'], ans:1},
+    {id:7, ch:4, type:'mc', q:'The Hydraulic Grade Line (HGL) equals:', choices:['Velocity head','Pressure head + elevation head','Total energy','Head loss only'], ans:1},
+    {id:8, ch:4, type:'mc', q:'In a Venturi meter, velocity increases because:', choices:['Area decreases','Friction increases','Static pressure increases','Elevation increases'], ans:0},
+    {id:9, ch:4, type:'mc', q:'Turbulent flow is characterized by:', choices:['Laminar profile','Random eddies and crosscurrents','Uniform particle paths','Re < 2000'], ans:1},
+    {id:10, ch:4, type:'tf', q:'The HGL is always below the EGL by the velocity head.', ans:true},
+    {id:11, ch:4, type:'fib', q:'Bernoulli’s equation ties elevation head, pressure head, and ________ head (v²/2g).', answers:['velocity']},
+
+    // ---- Chapter 5 (10) ----
+    {id:12, ch:5, type:'mc', q:'Static Suction Head (SSH) is:', choices:['Pump output head','Vertical distance from suction water level to pump centerline','Discharge pressure + friction','Head loss in suction pipe'], ans:1},
+    {id:13, ch:5, type:'mc', q:'Static Discharge Head (SDH) is:', choices:['Height of water above suction','Vertical distance from pump centerline to discharge surface','Friction + velocity head','Energy grade line'], ans:1},
+    {id:14, ch:5, type:'mc', q:'Total Static Head (TSH) is computed as:', choices:['SSH + SDH','SDH − SSH (or sum if suction lift)','SSH − SDH','TDH − friction loss'], ans:1},
+    {id:15, ch:5, type:'mc', q:'Dynamic Discharge Head (DDH) includes:', choices:['Elevation only','Elevation + friction loss','Pressure only','Static head only'], ans:1},
+    {id:16, ch:5, type:'mc', q:'Total Dynamic Head (TDH) equals:', choices:['Sum of velocities','Difference between discharge and suction heads including losses','Motor efficiency','Reservoir height'], ans:1},
+    {id:17, ch:5, type:'mc', q:'Water Horsepower (WHP) formula is:', choices:['Q × 3960 / H','(Q × H) / 3960','H × 3960 / Q','Q × H × Eff'], ans:1},
+    {id:18, ch:5, type:'mc', q:'Brake Horsepower (BHP) is:', choices:['WHP × motor efficiency','WHP / pump efficiency','WHP × pump efficiency','Motor HP × pump eff.'], ans:1},
+    {id:19, ch:5, type:'fib', q:'Convert 95 psi to head (ft): ________ ft (use 2.31 ft/psi).', answers:['219.45','219.5','219']},
+    {id:20, ch:5, type:'tf', q:'At shutoff head, a centrifugal pump delivers zero flow.', ans:true},
+    {id:21, ch:5, type:'mc', q:'Specific capacity of a well is:', choices:['Flow per unit area','Discharge per foot of drawdown (gpm/ft)','TDH per horsepower','Well radius'], ans:1},
+
+    // ---- Chapter 6 (9) ----
+    {id:22, ch:6, type:'mc', q:'Major head loss is caused primarily by:', choices:['Pipe wall friction','Bends/valves only','Elevation changes','Pump work'], ans:0},
+    {id:23, ch:6, type:'mc', q:'Darcy–Weisbach: h_f =', choices:['f (L/D) (V²/2g)','C Q^{1.85}','K V²','f × V × L'], ans:0},
+    {id:24, ch:6, type:'mc', q:'In Hazen–Williams, C represents:', choices:['Velocity','Flow rate','Roughness coefficient','Slope'], ans:2},
+    {id:25, ch:6, type:'mc', q:'A higher C-factor generally indicates a pipe that is:', choices:['Older/rougher','Smoother/newer','Smaller diameter','Partially full'], ans:1},
+    {id:26, ch:6, type:'fib', q:'Slope of the HGL is s = h_f / ________.', answers:['l','length']},
+    {id:27, ch:6, type:'tf', q:'Increasing diameter usually reduces head loss at a given flow rate.', ans:true},
+    {id:28, ch:6, type:'mc', q:'Pressure drop (psi) from head loss (ft) is computed with factor:', choices:['2.31','0.433','9.81','1.00'], ans:1},
+    {id:29, ch:6, type:'mc', q:'As flow rate increases, the HGL along a pipeline typically:', choices:['Rises','Drops (more loss)','Stays level','Becomes EGL'], ans:1},
+    {id:30, ch:6, type:'tf', q:'Minor losses from bends/valves are usually smaller than major losses from long straight pipe.', ans:true},
+  ];
+
+  // --- State ---------------------------------------------------------------
+  let ORDER = [...BANK.keys()];
+  const elQuiz = document.getElementById('quiz');
+  const elQCount = document.getElementById('qCount');
+  const elScore = document.getElementById('scorePill');
+  const elResults = document.getElementById('resultsBox');
+
+  function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr}
+
+  function render(){
+    elQuiz.innerHTML = '';
+    const activeCh = new Set([...document.querySelectorAll('.chapterFilter input:checked')].map(i=>+i.dataset.ch));
+    const items = ORDER.map(i=>BANK[i]).filter(q=>activeCh.has(q.ch));
+    items.forEach((q,idx)=>{
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.qid = q.id;
+      const meta = `<div class="qmeta"><span>Q${idx+1}</span><span class="badge">Ch.${q.ch} · ${q.type.toUpperCase()}</span></div>`;
+      const stem = `<div class="stem">${q.q}</div>`;
+      let body='';
+      if(q.type==='mc'){
+        body = '<div class="choices">' + q.choices.map((c,i)=>`
+          <label class="choice"><input type="radio" name="q_${q.id}" value="${i}"/> <span>${String.fromCharCode(65+i)}. ${c}</span></label>
+        `).join('') + '</div>';
+      } else if(q.type==='tf'){
+        body = '<div class="choices">'
+            + `<label class="choice"><input type="radio" name="q_${q.id}" value="true"/> True</label>`
+            + `<label class="choice"><input type="radio" name="q_${q.id}" value="false"/> False</label>`
+            + '</div>';
+      } else {
+        body = `<input class="fib" type="text" name="q_${q.id}" placeholder="Type your answer" autocomplete="off"/>`;
+      }
+      card.innerHTML = meta + '<h3 style="margin:6px 0 8px">' + stem + '</h3>' + body + '<div class="foot" id="f_'+q.id+'"></div>';
+      elQuiz.appendChild(card);
+    });
+    elQCount.textContent = items.length;
+    elScore.textContent = '0 / ' + items.length;
+    elResults.classList.add('hidden');
+  }
+
+  function grade(){
+    let correct=0, total=0;
+    const activeCh = new Set([...document.querySelectorAll('.chapterFilter input:checked')].map(i=>+i.dataset.ch));
+    const cards = [...document.querySelectorAll('.card')];
+    cards.forEach(card=>{
+      const qid = +card.dataset.qid; const q = BANK.find(v=>v.id===qid); if(!activeCh.has(q.ch)) return;
+      total++;
+      let ok=false, feedback='';
+      if(q.type==='mc'){
+        const sel = card.querySelector('input[type=radio]:checked');
+        const val = sel ? +sel.value : null;
+        ok = (val===q.ans);
+        feedback = sel?`You chose ${String.fromCharCode(65+val)}. Correct: ${String.fromCharCode(65+q.ans)}.`:'No selection made.';
+      } else if(q.type==='tf'){
+        const sel = card.querySelector('input[type=radio]:checked');
+        const val = sel ? (sel.value==='true') : null;
+        ok = (val===q.ans);
+        feedback = sel?`Your answer: ${val?'True':'False'}. Correct: ${q.ans?'True':'False'}.`:'No selection made.';
+      } else {
+        const inp = card.querySelector('input.fib');
+        const v = (inp.value||'').trim().toLowerCase();
+        ok = q.answers.some(a=>v===a.toLowerCase());
+        feedback = v?`Your answer: "${inp.value}".`:'No answer typed.';
+        if(!ok){ feedback += ` Correct: ${q.answers[0]}`; }
+      }
+      card.classList.toggle('correct', ok);
+      card.classList.toggle('incorrect', !ok);
+      const foot = card.querySelector('.foot');
+      foot.textContent = feedback;
+      correct += ok?1:0;
+    });
+    elScore.textContent = `${correct} / ${total}`;
+    elResults.classList.remove('hidden');
+    const pct = total?Math.round(100*correct/total):0;
+    elResults.innerHTML = `<strong>Result:</strong> ${correct} / ${total} (${pct}%)` + (pct===100? ' ✨ Perfect!':'');
+  }
+
+  function reset(){
+    document.querySelectorAll('.card').forEach(card=>{
+      card.classList.remove('correct','incorrect');
+      card.querySelectorAll('input[type=radio]').forEach(r=>r.checked=false);
+      const inp = card.querySelector('input.fib'); if(inp) inp.value='';
+      card.querySelector('.foot').textContent='';
+    });
+    elScore.textContent = `0 / ${document.querySelectorAll('.card').length}`;
+    elResults.classList.add('hidden');
+  }
+
+  // UI hooks
+  document.getElementById('submitBtn').addEventListener('click', grade);
+  document.getElementById('resetBtn').addEventListener('click', reset);
+  document.getElementById('shuffleBtn').addEventListener('click', ()=>{ ORDER = shuffle([...BANK.keys()]); render(); });
+  document.querySelectorAll('.chapterFilter input').forEach(cb=>cb.addEventListener('change',render));
+
+  // Init
+  ORDER = [...BANK.keys()];
+  render();
+  </script>
+</body>
+</html>
